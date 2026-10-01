@@ -13,23 +13,23 @@ on:
         - android-12.1
         - android-11.0
       DEVICE_TREE:
-        description: 'Custom Recovery Tree' # Your already made Device Tree for TWRP
+        description: 'Custom Recovery Tree'
         required: true
         default: 'https://github.com/enter_username/repo_name'
       DEVICE_TREE_BRANCH:
-        description: 'Your Custom Recovery Tree Branch' # Your Device Tree Branch, make sure it's right.
+        description: 'Your Custom Recovery Tree Branch'
         required: true
         default: 'main'
       DEVICE_NAME:
-        description: 'Specify your Device Codename' # As is, just like your PRODUCT_DEVICE in your device tree.
+        description: 'Specify your Device Codename'
         required: true
         default: '7304X'
       DEVICE_PATH:
-        description: 'Specify your Device Path (Check the DEVICE_PATH in BoardConfig.mk)' # As is, just like your DEVICE_PATH in your BoardConfig.mk
+        description: 'Specify your Device Path (Check the DEVICE_PATH in BoardConfig.mk)'
         required: true
         default: 'device/device`s_company/Codename'
       BUILD_TARGET:
-        description: 'Specify your Build Target (choose "pbrp" instead of "recovery" for Android 11 or above)' # Pick among boot, recovery and vendor_boot
+        description: 'Specify your Build Target (choose "pbrp" instead of "recovery" for Android 11 or above)'
         required: true
         default: 'recovery'
         type: choice
@@ -44,7 +44,7 @@ on:
         default: 'false'
         type: boolean
       LDCHECKPATH:
-        description: 'Path of blobs to check' # Use it know what kind of dependencies your missing for decryption blobs.
+        description: 'Path of blobs to check'
         required: true
         default: 'system/bin/qseecomd'
 
@@ -130,6 +130,8 @@ jobs:
             echo "DEVICE_MAKEFILE=omni_${{ inputs.DEVICE_NAME }}" >> $GITHUB_ENV
         elif [ -f ${{ inputs.DEVICE_PATH }}/pb_${{ inputs.DEVICE_NAME}}.mk ]; then
             echo "DEVICE_MAKEFILE=pb_${{ inputs.DEVICE_NAME }}" >> $GITHUB_ENV
+        elif [ -f ${{ inputs.DEVICE_PATH }}/pbrp_${{ inputs.DEVICE_NAME}}.mk ]; then
+            echo "DEVICE_MAKEFILE=pbrp_${{ inputs.DEVICE_NAME }}" >> $GITHUB_ENV
         else
             echo "No recovery makefile file found!"
         fi
@@ -144,7 +146,7 @@ jobs:
     - name: Fixed Missing Fonts
       run: |
         cd android-recovery
-        mkdir external/noto-fonts/other && cd external/noto-fonts/other
+        mkdir -p external/noto-fonts/other && cd external/noto-fonts/other
         wget https://github.com/cd-Crypton/custom-recovery-extras/raw/main/missing-font.zip
         unzip -o missing-font.zip
 
@@ -160,11 +162,10 @@ jobs:
         fi
         popd
 
-    - name: Set Build Date # Needed for gh-releases
+    - name: Set Build Date
       run: |
         echo "BUILD_DATE=$(TZ=UTC date +%Y%m%d)" >> $GITHUB_ENV
 
-   
     - name: Check if the recovery exists
       if: always()
       run: |
@@ -188,11 +189,7 @@ jobs:
       uses: softprops/action-gh-release@master
       with:
         files: |
-          if [ "${{ inputs.BUILD_TARGET }}" != "pbrp" ]; then
-            ${{ env.OUTPUT_DIR }}/${{ inputs.BUILD_TARGET }}*.img
-          else
-            ${{ env.OUTPUT_DIR }}/recovery*.img
-          fi
+          ${{ env.OUTPUT_DIR }}/recovery*.img
           ${{ env.OUTPUT_DIR }}/PBRP*.zip
           ${{ env.OUTPUT_DIR }}/ramdisk-recovery.*
         name: Unofficial PBRP for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
